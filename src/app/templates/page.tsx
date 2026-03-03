@@ -100,25 +100,25 @@ export default function TemplatesPage() {
                         }}
                         dangerouslySetInnerHTML={{
                             __html: template
-                                .replace(/\{\{greeting\}\}/g, "Dear Priya Sharma,")
+                                .replace(/\{\{\s*greeting\s*\}\}/g, "Dear Priya Sharma,")
                                 .replace(
-                                    /\{\{body\}\}/g,
+                                    /\{\{\s*body\s*\}\}/g,
                                     "I am writing to express my strong interest in the Python Developer position at your esteemed organization. With over 5 years of experience in Python development, including expertise in FastAPI, Django, and cloud technologies, I am confident in my ability to contribute meaningfully to your team."
                                 )
                                 .replace(
-                                    /\{\{skills_highlight\}\}/g,
+                                    /\{\{\s*skills_highlight\s*\}\}/g,
                                     "Python, FastAPI, Django, PostgreSQL, Docker, AWS"
                                 )
                                 .replace(
-                                    /\{\{closing\}\}/g,
+                                    /\{\{\s*closing\s*\}\}/g,
                                     "I look forward to the opportunity to discuss how my skills and experience can benefit your team. Thank you for considering my application."
                                 )
-                                .replace(/\{\{sender_name\}\}/g, "Anupam Dutta")
+                                .replace(/\{\{\s*sender_name\s*\}\}/g, "Anupam Dutta")
                                 .replace(
-                                    /\{\{sender_email\}\}/g,
+                                    /\{\{\s*sender_email\s*\}\}/g,
                                     "anupam@example.com"
                                 )
-                                .replace(/\{\{sender_phone\}\}/g, "+91 98765 43210"),
+                                .replace(/\{\{\s*sender_phone\s*\}\}/g, "+91 98765 43210"),
                         }}
                     />
                 </div>

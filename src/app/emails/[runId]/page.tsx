@@ -217,7 +217,7 @@ export default function EmailReviewPage() {
                             onClick={() => setSelectedEmail(email)}
                         >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                                <div style={{ flex: 1 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>
                                         {email.subject}
                                     </div>
@@ -298,6 +298,8 @@ export default function EmailReviewPage() {
                                         color: "#333",
                                         fontSize: "14px",
                                         lineHeight: 1.6,
+                                        wordBreak: "break-word",
+                                        overflowX: "auto",
                                     }}
                                     dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }}
                                 />
