@@ -1,65 +1,283 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { listRuns, healthCheck } from "@/lib/api";
+
+interface WorkflowRun {
+  run_id: string;
+  status: string;
+  current_step: string;
+  jobs_found: number;
+  emails_generated: number;
+}
+
+interface HealthStatus {
+  openai_configured: boolean;
+  serpapi_configured: boolean;
+  tavily_configured: boolean;
+  smtp_configured: boolean;
+  langsmith_configured: boolean;
+}
+
+const stepLabels: Record<string, string> = {
+  starting: "Starting...",
+  analyzing_cv: "Analyzing CV",
+  cv_analyzed: "CV Analyzed",
+  searching_jobs: "Searching Jobs",
+  jobs_searched: "Jobs Found",
+  extracting_contacts: "Extracting HR Contacts",
+  contacts_extracted: "Contacts Extracted",
+  generating_emails: "Generating Emails",
+  emails_generated: "Emails Generated",
+  awaiting_review: "Awaiting Your Review",
+  review_complete: "Review Complete",
+  sending_emails: "Sending Emails",
+  completed: "Completed",
+  failed: "Failed",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    running: "badge-info",
+    awaiting_review: "badge-warning",
+    completed: "badge-success",
+    failed: "badge-danger",
+    sending: "badge-info",
+  };
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <span className={`badge ${styles[status] || "badge-neutral"}`}>
+      {status === "running" && <span className="pulse-dot" style={{ background: "var(--info)" }} />}
+      {status === "awaiting_review" && <span className="pulse-dot" style={{ background: "var(--warning)" }} />}
+      {status.replace(/_/g, " ")}
+    </span>
+  );
+}
+
+export default function DashboardPage() {
+  const [runs, setRuns] = useState<WorkflowRun[]>([]);
+  const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [runsData, healthData] = await Promise.all([
+          listRuns(),
+          healthCheck(),
+        ]);
+        setRuns(runsData.runs || []);
+        setHealth(healthData);
+        setApiError("");
+      } catch (err: any) {
+        setApiError(
+          "Cannot connect to backend. Make sure the FastAPI server is running on localhost:8000."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="fade-in">
+      <h1 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "8px" }}>
+        Dashboard
+      </h1>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "32px" }}>
+        AI-powered job search and email outreach automation
+      </p>
+
+      {apiError && (
+        <div
+          className="glass-card"
+          style={{
+            padding: "16px 20px",
+            marginBottom: "24px",
+            borderColor: "rgba(239, 68, 68, 0.3)",
+            background: "rgba(239, 68, 68, 0.05)",
+          }}
+        >
+          <span style={{ color: "var(--danger)" }}>⚠️ {apiError}</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      )}
+
+      {/* Status Cards */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: "16px",
+          marginBottom: "32px",
+        }}
+      >
+        {[
+          {
+            label: "OpenAI",
+            ok: health?.openai_configured,
+            icon: "🤖",
+          },
+          {
+            label: "SerpAPI",
+            ok: health?.serpapi_configured,
+            icon: "🔍",
+          },
+          {
+            label: "Tavily",
+            ok: health?.tavily_configured,
+            icon: "🟣",
+          },
+          { label: "SMTP", ok: health?.smtp_configured, icon: "📧" },
+          {
+            label: "LangSmith",
+            ok: health?.langsmith_configured,
+            icon: "📊",
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="glass-card"
+            style={{ padding: "20px" }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontSize: "28px" }}>{item.icon}</span>
+              <span
+                className={`badge ${item.ok ? "badge-success" : "badge-danger"}`}
+              >
+                {item.ok ? "Active" : "Not Set"}
+              </span>
+            </div>
+            <div
+              style={{
+                marginTop: "12px",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+            >
+              {item.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "32px",
+        }}
+      >
+        <Link href="/cv">
+          <button className="btn-primary">📄 Upload CV & Start</button>
+        </Link>
+        <Link href="/settings">
+          <button className="btn-secondary">⚙️ Configure API Keys</button>
+        </Link>
+      </div>
+
+      {/* Workflow Runs */}
+      <div className="glass-card" style={{ padding: "24px" }}>
+        <h2
+          style={{
+            fontSize: "18px",
+            fontWeight: 600,
+            marginBottom: "16px",
+          }}
+        >
+          Workflow Runs
+        </h2>
+
+        {loading ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "24px",
+              color: "var(--text-muted)",
+            }}
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <span className="spinner" />
+            Loading...
+          </div>
+        ) : runs.length === 0 ? (
+          <div
+            style={{
+              padding: "48px",
+              textAlign: "center",
+              color: "var(--text-muted)",
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🚀</div>
+            <p>No workflow runs yet.</p>
+            <p style={{ fontSize: "13px" }}>
+              Upload your CV to start the job search automation.
+            </p>
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Run ID</th>
+                <th>Status</th>
+                <th>Step</th>
+                <th>Jobs</th>
+                <th>Emails</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((run) => (
+                <tr key={run.run_id}>
+                  <td style={{ fontFamily: "monospace", fontSize: "12px" }}>
+                    {run.run_id.slice(0, 8)}...
+                  </td>
+                  <td>
+                    <StatusBadge status={run.status} />
+                  </td>
+                  <td style={{ color: "var(--text-secondary)" }}>
+                    {stepLabels[run.current_step] || run.current_step}
+                  </td>
+                  <td>{run.jobs_found}</td>
+                  <td>{run.emails_generated}</td>
+                  <td>
+                    <Link href={`/jobs/${run.run_id}`}>
+                      <button className="btn-secondary" style={{ padding: "6px 12px", fontSize: "12px" }}>
+                        View
+                      </button>
+                    </Link>
+                    {run.status === "awaiting_review" && (
+                      <Link href={`/emails/${run.run_id}`}>
+                        <button
+                          className="btn-primary"
+                          style={{
+                            padding: "6px 12px",
+                            fontSize: "12px",
+                            marginLeft: "8px",
+                          }}
+                        >
+                          Review Emails
+                        </button>
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
