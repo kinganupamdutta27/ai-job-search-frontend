@@ -114,6 +114,82 @@ export async function getSmtpGuide() {
   return apiRequest<any>("/api/settings/smtp-guide");
 }
 
+// ── Contact Finder APIs ──
+
+export async function startContactFinder(data: { prompt: string; max_companies?: number }) {
+  return apiRequest<any>("/api/contact-finder/start", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getContactFinderStatus(runId: string) {
+  return apiRequest<any>(`/api/contact-finder/${runId}/status`);
+}
+
+export async function listContactFinderRuns() {
+  return apiRequest<any>("/api/contact-finder/runs");
+}
+
+// ── LinkedIn APIs ──
+
+export async function saveLinkedInCredentials(data: {
+  email: string;
+  password: string;
+  totp_secret?: string | null;
+}) {
+  return apiRequest<any>("/api/linkedin/auth", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function verifyLinkedInLogin() {
+  return apiRequest<any>("/api/linkedin/auth/verify", { method: "POST" });
+}
+
+export async function getLinkedInAuthStatus() {
+  return apiRequest<any>("/api/linkedin/auth/status");
+}
+
+export async function generateLinkedInPost(topic: string) {
+  return apiRequest<any>("/api/linkedin/post/generate", {
+    method: "POST",
+    body: JSON.stringify({ topic }),
+  });
+}
+
+export async function publishLinkedInPost(postId: string) {
+  return apiRequest<any>("/api/linkedin/post/publish", {
+    method: "POST",
+    body: JSON.stringify({ post_id: postId }),
+  });
+}
+
+export async function scheduleLinkedInPost(data: {
+  topic: string;
+  content?: string | null;
+  scheduled_at: string;
+}) {
+  return apiRequest<any>("/api/linkedin/post/schedule", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function listLinkedInPosts(status?: string) {
+  const path = status ? `/api/linkedin/posts?status=${status}` : "/api/linkedin/posts";
+  return apiRequest<any>(path);
+}
+
+export async function listLinkedInSchedules() {
+  return apiRequest<any>("/api/linkedin/schedules");
+}
+
+export async function cancelLinkedInSchedule(postId: string) {
+  return apiRequest<any>(`/api/linkedin/schedules/${postId}`, { method: "DELETE" });
+}
+
 // ── Health ──
 
 export async function healthCheck() {
